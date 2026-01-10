@@ -398,9 +398,9 @@ This project is licensed under the MIT License. See `LICENSE`.
 
 ## Author
 
-**Lobatinho**
+**Daniel Correa Lobato**
 - Website: [sites.lobato.org](https://sites.lobato.org)
-- Email: lobato@lobato.org
+- Email: daniel@lobato.org
 
 ## Acknowledgements
 
