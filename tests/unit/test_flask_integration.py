@@ -25,6 +25,7 @@ def test_flask_cache_service_init_with_app():
     app = Flask(__name__)
     app.config.update(CACHE_REDIS_HOST="localhost", CACHE_REDIS_PORT=6379, CACHE_REDIS_DB=0)
     service = FlaskCacheService(app)
+    assert service is not None
     assert "cache_service" in app.extensions
 
 

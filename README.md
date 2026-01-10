@@ -95,6 +95,11 @@ config = CacheFactoryConfig(
 cache_service = CacheService(config)
 ```
 
+### Examples
+
+- `examples/basic_usage.py`: framework-agnostic usage
+- `examples/flask_usage.py`: Flask integration
+
 ### Basic Flask Configuration
 
 ```python
@@ -189,33 +194,28 @@ CACHE_L2_BACKEND = "redis"  # "redis" or "valkey"
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                      Flask Application                      │
-├─────────────────────────────────────────────────────────────┤
-│                                                             │
-│                 ┌──────────▼──────────┐                     │
-│                 │ ResilientTwoLevel   │                     │
-│                 │ Cache               │                     │
-│                 └──────────┬──────────┘                     │
-│                            │                                │
-│         ┌──────────────────┼──────────────────┐             │
-│         │                  │                  │             │
-│   ┌─────▼─────┐     ┌─────▼─────┐     ┌─────▼─────┐       │
-│   │ L1: TTL   │     │ L2: Redis │     │ Circuit   │       │
-│   │ Cache     │     │ Backend   │     │ Breaker   │       │
-│   │ Backend   │     │           │     │           │       │
-│   └───────────┘     └─────┬─────┘     └───────────┘       │
-│                            │                                │
-└────────────────────────────┼────────────────────────────────┘
-                             │
-                    ┌────────▼────────┐
-                    │  CacheService   │
-                    │   (Facade)      │
-                    └────────┬────────┘
-                             │
-                    ┌────────▼────────┐
-                    │ Redis Server    │
-                    │ (or Valkey)     │
-                    └─────────────────┘
+│                      Application Code                       │
+└─────────────────────────────┬───────────────────────────────┘
+                              │
+                       ┌──────▼───────┐
+                       │ CacheService │
+                       │   (Facade)   │
+                       └──────┬───────┘
+                              │
+                 ┌────────────▼────────────┐
+                 │ ResilientTwoLevelCache  │
+                 └────────────┬────────────┘
+                              │
+            ┌─────────────────┼────────────────┐
+            │                                  │
+     ┌──────▼──────┐                    ┌──────▼──────┐
+     │ L1: TTLCache│                    │ L2: Valkey  │
+     │ (in-memory) │                    │ (Redis API) │
+     └─────────────┘                    └──────┬──────┘
+                                               │
+                                      ┌────────▼────────┐
+                                      │ Valkey Server   │
+                                      └─────────────────┘
 ```
 
 ## Cache Operations

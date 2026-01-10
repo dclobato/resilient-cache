@@ -1,6 +1,12 @@
 import pytest
 
-from resilient_cache.config import CacheConfig, CacheFactoryConfig, CircuitBreakerConfig, L1Config, L2Config
+from resilient_cache.config import (
+    CacheConfig,
+    CacheFactoryConfig,
+    CircuitBreakerConfig,
+    L1Config,
+    L2Config,
+)
 
 
 def test_circuit_breaker_config_validation():

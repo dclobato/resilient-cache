@@ -1,7 +1,5 @@
 import builtins
 
-import pytest
-
 from resilient_cache.cache_factory import CacheFactory
 from resilient_cache.config import CacheFactoryConfig, L1Config, L2Config
 

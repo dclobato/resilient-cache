@@ -5,7 +5,6 @@ Fornece uma fachada para inicialização via app.config e
 registro em app.extensions.
 """
 
-import logging
 from typing import Optional, cast
 
 from flask import Flask
@@ -40,7 +39,7 @@ class FlaskCacheService(CacheService):
 
         Lê configurações do app.config e cria a factory.
         """
-        logger: Optional[logging.Logger] = app.logger
+        logger = app.logger
 
         factory_config = CacheFactoryConfig.from_flask_config(app.config)
         factory_config.logger = logger

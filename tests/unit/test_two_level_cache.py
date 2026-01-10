@@ -1,5 +1,3 @@
-import pytest
-
 from resilient_cache.circuit_breaker import CircuitState
 from resilient_cache.config import CacheConfig, CircuitBreakerConfig, L1Config, L2Config
 from resilient_cache.exceptions import CacheConnectionError

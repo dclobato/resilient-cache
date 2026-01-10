@@ -8,7 +8,7 @@ from typing import Any, Optional
 class CacheError(Exception):
     """Exceção base para erros do sistema de cache."""
 
-    def __init__(self, message: str, details: Optional[dict] = None) -> None:
+    def __init__(self, message: str, details: Optional[dict] = None) -> None:  # noqa: B042
         """
         Inicializa a exceção.
 
@@ -29,7 +29,7 @@ class CacheError(Exception):
 class CacheConnectionError(CacheError):
     """Erro de conexão com o backend de cache (L2)."""
 
-    def __init__(
+    def __init__(  # noqa: B042
         self,
         message: str = "Failed to connect to cache backend",
         backend: Optional[str] = None,
@@ -58,7 +58,7 @@ class CacheConnectionError(CacheError):
 class CacheSerializationError(CacheError):
     """Erro de serialização/deserialização de dados."""
 
-    def __init__(
+    def __init__(  # noqa: B042
         self,
         message: str = "Failed to serialize/deserialize cache data",
         key: Optional[str] = None,
@@ -92,7 +92,7 @@ class CacheSerializationError(CacheError):
 class CacheConfigurationError(CacheError):
     """Erro de configuração do cache."""
 
-    def __init__(
+    def __init__(  # noqa: B042
         self,
         message: str = "Invalid cache configuration",
         config_key: Optional[str] = None,
@@ -120,7 +120,7 @@ class CacheConfigurationError(CacheError):
 class CircuitBreakerOpenError(CacheError):
     """Erro quando o circuit breaker está aberto."""
 
-    def __init__(
+    def __init__(  # noqa: B042
         self,
         message: str = "Circuit breaker is open",
         backend: Optional[str] = None,

@@ -40,6 +40,10 @@ l1 = [
 l2 = [
     "redis>=5.0.0",
 ]
+l1-l2 = [
+    "cachetools>=5.0.0",
+    "redis>=5.0.0",
+] 
 full = [
     "flask>=2.0.0",
     "cachetools>=5.0.0",

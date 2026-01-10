@@ -6,7 +6,11 @@ import pytest
 from resilient_cache.backends import redis_backend as redis_module
 from resilient_cache.backends import ttl_cache_backend as ttl_module
 from resilient_cache.config import L1Config, L2Config
-from resilient_cache.exceptions import CacheConfigurationError, CacheConnectionError, CacheSerializationError
+from resilient_cache.exceptions import (
+    CacheConfigurationError,
+    CacheConnectionError,
+    CacheSerializationError,
+)
 
 
 class FakeTTLCache:

@@ -762,6 +762,10 @@ full = [
 l1 = [
     { name = "cachetools" },
 ]
+l1-l2 = [
+    { name = "cachetools" },
+    { name = "redis" },
+]
 l2 = [
     { name = "redis" },
 ]
@@ -771,6 +775,7 @@ requires-dist = [
     { name = "black", marker = "extra == 'dev'", specifier = ">=23.0.0" },
     { name = "cachetools", marker = "extra == 'full'", specifier = ">=5.0.0" },
     { name = "cachetools", marker = "extra == 'l1'", specifier = ">=5.0.0" },
+    { name = "cachetools", marker = "extra == 'l1-l2'", specifier = ">=5.0.0" },
     { name = "flake8", marker = "extra == 'dev'", specifier = ">=6.0.0" },
     { name = "flake8-bugbear", marker = "extra == 'dev'", specifier = ">=25" },
     { name = "flask", marker = "extra == 'dev'", specifier = ">=2.0.0" },
@@ -782,11 +787,12 @@ requires-dist = [
     { name = "pytest-cov", marker = "extra == 'dev'", specifier = ">=4.0.0" },
     { name = "pytest-mock", marker = "extra == 'dev'", specifier = ">=3.10.0" },
     { name = "redis", marker = "extra == 'full'", specifier = ">=5.0.0" },
+    { name = "redis", marker = "extra == 'l1-l2'", specifier = ">=5.0.0" },
     { name = "redis", marker = "extra == 'l2'", specifier = ">=5.0.0" },
     { name = "types-cachetools", marker = "extra == 'dev'", specifier = ">=6" },
     { name = "types-redis", marker = "extra == 'dev'", specifier = ">=4.5.0" },
 ]
-provides-extras = ["flask", "l1", "l2", "full", "dev"]
+provides-extras = ["flask", "l1", "l2", "l1-l2", "full", "dev"]
 
 [[package]]
 name = "tomli"

@@ -83,7 +83,7 @@ class CacheFactory:
             self._cachetools_available = False
             self.logger.warning(
                 "cachetools not available - L1 cache will be disabled. "
-                "Install with: uv add \"resilient-cache[l1]\""
+                'Install with: uv add "resilient-cache[l1]"'
             )
 
         # Verificar redis (L2)
@@ -96,7 +96,7 @@ class CacheFactory:
             self._redis_available = False
             self.logger.warning(
                 "redis not available - L2 cache will be disabled. "
-                "Install with: uv add \"resilient-cache[l2]\""
+                'Install with: uv add "resilient-cache[l2]"'
             )
 
     def _create_l1_backend(self, config: L1Config) -> Optional[CacheBackend]:

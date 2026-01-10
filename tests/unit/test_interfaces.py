@@ -1,6 +1,6 @@
+import builtins
 import importlib
 import sys
-import builtins
 
 import resilient_cache
 from resilient_cache.app_cache import AppCache

@@ -60,7 +60,7 @@ __all__ = [
 ]
 
 try:
-    from .flask_integration import FlaskCacheService, get_cache_service
+    from .flask_integration import FlaskCacheService, get_cache_service  # noqa: F401
 
     __all__.extend(["FlaskCacheService", "get_cache_service"])
 except ImportError:
