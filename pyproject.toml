@@ -1,0 +1,103 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "resilient-cache"
+version = "0.1.0"
+description = "Sistema de cache resiliente em dois níveis (L1/L2) para qualquer aplicação"
+readme = "README.md"
+authors = [
+    {name = "Daniel Correa Lobato", email = "daniel@lobato.org"}
+]
+license = {text = "MIT"}
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Framework :: Flask",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+]
+keywords = ["flask", "cache", "redis", "valkey", "two-level-cache", "resilient"]
+requires-python = ">=3.11"
+dependencies = [
+]
+
+[project.optional-dependencies]
+flask = [
+    "flask>=2.0.0",
+]
+l1 = [
+    "cachetools>=5.0.0",
+]
+l2 = [
+    "redis>=5.0.0",
+]
+full = [
+    "flask>=2.0.0",
+    "cachetools>=5.0.0",
+    "redis>=5.0.0",
+]
+dev = [
+    "flask>=2.0.0",
+    "pytest>=7.0.0",
+    "pytest-cov>=4.0.0",
+    "pytest-mock>=3.10.0",
+    "black>=23.0.0",
+    "isort>=5.12.0",
+    "flake8>=6.0.0",
+    "flake8-bugbear>=25",
+    "mypy>=1.0.0",
+    "types-redis>=4.5.0",
+	"types-cachetools>=6",
+]
+
+[project.urls]
+Homepage = "https://github.com/dclobato/resilient-cache"
+Documentation = "https://github.com/dclobato/resilient-cache#readme"
+Repository = "https://github.com/dclobato/resilient-cache"
+Issues = "https://github.com/dclobato/resilient-cache/issues"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.black]
+line-length = 100
+target-version = ["py39", "py310", "py311", "py312", "py313", "py314"]
+include = '\.pyi?$'
+
+[tool.isort]
+profile = "black"
+line_length = 100
+multi_line_output = 3
+include_trailing_comma = true
+force_grid_wrap = 0
+use_parentheses = true
+ensure_newline_before_comments = true
+
+[tool.mypy]
+python_version = "3.9"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = [
+    "-v",
+    "--cov=resilient_cache",
+    "--cov-report=term-missing",
+    "--cov-report=html",
+    "--cov-fail-under=90",
+]
