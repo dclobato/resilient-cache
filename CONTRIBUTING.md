@@ -202,6 +202,6 @@ By contributing, you agree that your contributions are licensed under the MIT Li
 
 ## Questions?
 
-Open an issue or email lobato@lobato.org.
+Open an issue or email daniel@lobato.org.
 
 Thanks for contributing.

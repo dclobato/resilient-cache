@@ -225,6 +225,6 @@ my_cache = cache_service.create_cache(
 
 ## Support
 
-- Issues: https://github.com/lobatinho/resilient-cache/issues
-- Email: lobato@lobato.org
+- Issues: https://github.com/dclobato/resilient-cache/issues
+- Email: daniel@lobato.org
 - Website: https://sites.lobato.org
