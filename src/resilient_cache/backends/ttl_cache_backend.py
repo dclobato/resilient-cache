@@ -3,6 +3,7 @@ Backend de cache L1 usando cachetools.TTLCache.
 """
 
 import logging
+from threading import RLock
 from typing import Any, List, Optional
 
 from ..config import L1Config
@@ -39,7 +40,7 @@ class TTLCacheBackend(CacheBackend):
         """
         if not CACHETOOLS_AVAILABLE:
             raise CacheConfigurationError(
-                "cachetools library not available. Install with: pip install cachetools",
+                "`cachetools` library not available. Please install it to use TTLCacheBackend.",
                 config_key="l1_backend",
                 config_value="ttl",
             )
@@ -51,6 +52,8 @@ class TTLCacheBackend(CacheBackend):
         self._cache: TTLCache = TTLCache(maxsize=config.maxsize, ttl=config.ttl)
         self._hits = 0
         self._misses = 0
+
+        self._lock = RLock()
 
         self.logger.info(f"TTLCache initialized: maxsize={config.maxsize}, ttl={config.ttl}s")
 
@@ -65,7 +68,8 @@ class TTLCacheBackend(CacheBackend):
             Valor armazenado ou None se não encontrado
         """
         try:
-            value = self._cache[key]
+            with self._lock:
+                value = self._cache[key]
             self._hits += 1
             self.logger.debug(f"L1 cache hit: {key}")
             return value
@@ -87,7 +91,8 @@ class TTLCacheBackend(CacheBackend):
             TTLCache usa um TTL global definido na criação.
             O parâmetro ttl é ignorado.
         """
-        self._cache[key] = value
+        with self._lock:
+            self._cache[key] = value
         self.logger.debug(f"L1 cache set: {key}")
 
     def delete(self, key: str) -> None:
@@ -98,7 +103,8 @@ class TTLCacheBackend(CacheBackend):
             key: Chave para remover
         """
         try:
-            del self._cache[key]
+            with self._lock:
+                del self._cache[key]
             self.logger.debug(f"L1 cache delete: {key}")
         except KeyError:
             # Chave não existe, ignorar
@@ -112,7 +118,8 @@ class TTLCacheBackend(CacheBackend):
             Número de itens removidos
         """
         size = len(self._cache)
-        self._cache.clear()
+        with self._lock:
+            self._cache.clear()
         self.logger.info(f"L1 cache cleared: {size} items removed")
         return size
 
@@ -126,7 +133,9 @@ class TTLCacheBackend(CacheBackend):
         Returns:
             True se existe
         """
-        return key in self._cache
+        with self._lock:
+            r = key in self._cache
+        return r
 
     def get_ttl(self, key: str) -> Optional[int]:
         """
@@ -142,10 +151,12 @@ class TTLCacheBackend(CacheBackend):
             TTLCache não expõe TTL por item diretamente.
             Retorna o TTL global se a chave existe.
         """
-        if key in self._cache:
-            # Estimativa: retorna o TTL global
-            return self.config.ttl
-        return None
+        r = None
+        with self._lock:
+            if key in self._cache:
+                # Estimativa: retorna o TTL global
+                r = self.config.ttl
+        return r
 
     def list_keys(self, prefix: Optional[str] = None) -> List[str]:
         """
@@ -157,7 +168,8 @@ class TTLCacheBackend(CacheBackend):
         Returns:
             Lista de chaves
         """
-        keys = list(self._cache.keys())
+        with self._lock:
+            keys = list(self._cache.keys())
         if prefix:
             keys = [k for k in keys if k.startswith(prefix)]
         return keys
@@ -169,7 +181,9 @@ class TTLCacheBackend(CacheBackend):
         Returns:
             Número de itens
         """
-        return len(self._cache)
+        with self._lock:
+            r = len(self._cache)
+        return r
 
     def get_stats(self) -> dict:
         """
@@ -178,8 +192,9 @@ class TTLCacheBackend(CacheBackend):
         Returns:
             Dicionário com estatísticas
         """
-        total_requests = self._hits + self._misses
-        hit_rate = (self._hits / total_requests * 100) if total_requests > 0 else 0.0
+        with self._lock:
+            total_requests = self._hits + self._misses
+            hit_rate = (self._hits / total_requests * 100) if total_requests > 0 else 0.0
 
         return {
             "backend": "TTLCache",
