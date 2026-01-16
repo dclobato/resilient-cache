@@ -29,6 +29,9 @@ class MyL1Backend(CacheBackend):
     def set(self, key: str, value: Any, ttl: Optional[int] = None) -> None:
         ...
 
+    def set_if_not_exist(self, key: str, value: Any, ttl: Optional[int] = None) -> None:
+        ...
+
     def delete(self, key: str) -> None:
         ...
 
