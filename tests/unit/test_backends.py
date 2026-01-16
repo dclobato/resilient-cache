@@ -11,6 +11,7 @@ from resilient_cache.exceptions import (
     CacheConnectionError,
     CacheSerializationError,
 )
+from resilient_cache.serializers import JsonSerializer, PickleSerializer
 
 
 class FakeTTLCache:
@@ -139,17 +140,24 @@ def test_redis_backend_connection_error(monkeypatch):
     config = L2Config(enabled=True, host="localhost", port=6379, db=0, key_prefix="p")
 
     with pytest.raises(CacheConnectionError):
-        redis_module.RedisBackend(config)
+        redis_module.RedisBackend(config, JsonSerializer())
 
 
-def test_redis_backend_basic_operations(monkeypatch):
+@pytest.mark.parametrize(
+    ("serializer", "value"),
+    [
+        (JsonSerializer(), {"a": 1}),
+        (PickleSerializer(), {"a": 1}),
+    ],
+)
+def test_redis_backend_basic_operations(monkeypatch, serializer, value):
     _setup_fake_redis(monkeypatch, FakeRedisClient)
     config = L2Config(enabled=True, host="localhost", port=6379, db=0, key_prefix="p", ttl=10)
-    backend = redis_module.RedisBackend(config, serializer="json")
+    backend = redis_module.RedisBackend(config, serializer)
 
     assert backend.get("missing") is None
-    backend.set("k1", {"a": 1})
-    assert backend.get("k1") == {"a": 1}
+    backend.set("k1", value)
+    assert backend.get("k1") == value
     assert backend.exists("k1") is True
     assert backend.get_ttl("k1") == 5
     assert backend.list_keys(prefix="k") == ["k1"]
@@ -169,13 +177,20 @@ def test_redis_backend_basic_operations(monkeypatch):
     assert "RedisBackend" in repr(backend)
 
 
-def test_redis_backend_serialization_error(monkeypatch):
+@pytest.mark.parametrize(
+    ("serializer", "bad_value"),
+    [
+        (JsonSerializer(), {"value": object()}),
+        (PickleSerializer(), lambda x: x),
+    ],
+)
+def test_redis_backend_serialization_error(monkeypatch, serializer, bad_value):
     _setup_fake_redis(monkeypatch, FakeRedisClient)
     config = L2Config(enabled=True, host="localhost", port=6379, db=0, key_prefix="p", ttl=10)
-    backend = redis_module.RedisBackend(config, serializer="json")
+    backend = redis_module.RedisBackend(config, serializer)
 
     with pytest.raises(CacheSerializationError):
-        backend.set("bad", {"value": object()})
+        backend.set("bad", bad_value)
 
 
 def test_redis_backend_missing_dependency(monkeypatch):
@@ -184,16 +199,24 @@ def test_redis_backend_missing_dependency(monkeypatch):
     config = L2Config(enabled=True, host="localhost", port=6379, db=0, key_prefix="p")
 
     with pytest.raises(CacheConfigurationError):
-        redis_module.RedisBackend(config)
+        redis_module.RedisBackend(config, JsonSerializer())
 
 
-def test_redis_backend_deserialize_error(monkeypatch):
+@pytest.mark.parametrize(
+    ("serializer", "bad_bytes"),
+    [
+        (JsonSerializer(), b"not-json"),
+        (PickleSerializer(), b"not-pickle"),
+    ],
+)
+def test_redis_backend_deserialize_error(monkeypatch, serializer, bad_bytes):
     _setup_fake_redis(monkeypatch, FakeRedisClient)
     config = L2Config(enabled=True, host="localhost", port=6379, db=0, key_prefix="p", ttl=10)
-    backend = redis_module.RedisBackend(config, serializer="json")
+    backend = redis_module.RedisBackend(config, serializer)
 
     with pytest.raises(CacheSerializationError):
-        backend._deserialize(b"not-json")
+        backend._client.setex("p:bad", 10, bad_bytes)
+        backend.get("bad")
 
 
 def test_redis_backend_operations_raise_connection_error(monkeypatch):
@@ -224,7 +247,7 @@ def test_redis_backend_operations_raise_connection_error(monkeypatch):
 
     _setup_fake_redis(monkeypatch, ErrorRedisClient)
     config = L2Config(enabled=True, host="localhost", port=6379, db=0, key_prefix="p", ttl=10)
-    backend = redis_module.RedisBackend(config, serializer="pickle")
+    backend = redis_module.RedisBackend(config, PickleSerializer())
 
     with pytest.raises(CacheConnectionError):
         backend.get("k1")

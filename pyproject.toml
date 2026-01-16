@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "resilient-cache"
-version = "0.1.0"
+version = "1.0.0"
 description = "Sistema de cache resiliente em dois níveis (L1/L2) para qualquer aplicação"
 readme = "README.md"
 authors = [

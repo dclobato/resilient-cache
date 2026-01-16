@@ -8,6 +8,9 @@ import logging
 from dataclasses import dataclass, field
 from typing import Any, Callable, Optional
 
+from resilient_cache.config.utils import is_valid_fqdn, is_valid_ip, is_valid_port
+from resilient_cache.serializers import CacheSerializer, list_serializers
+
 
 @dataclass
 class CircuitBreakerConfig:
@@ -98,16 +101,30 @@ class L2Config:
 
     def __post_init__(self) -> None:
         """Valida a configuração."""
+        if not isinstance(self.enabled, bool):
+            raise ValueError("L2 enabled must be a boolean")
         if self.enabled:
-            if self.ttl < 1:
+            if not isinstance(self.ttl, int) or self.ttl < 1:
                 raise ValueError("L2 TTL must be >= 1")
-            if not self.key_prefix:
+            if not isinstance(self.key_prefix, str) or not self.key_prefix.strip():
                 raise ValueError("L2 key_prefix cannot be empty")
-            if self.port < 1 or self.port > 65535:
+            if not isinstance(self.host, str) or not self.host.strip():
+                raise ValueError("VALKEY_BACKEND_HOST deve ser uma string valida")
+            host = self.host.strip()
+            if not (is_valid_ip(host) or is_valid_fqdn(host)):
+                raise ValueError("L2 host must be a valid IP address or FQDN")
+            if not isinstance(self.port, int) or not is_valid_port(self.port, exclude_zero=True):
                 raise ValueError("L2 port must be between 1 and 65535")
-            if self.db < 0:
+            if not isinstance(self.db, int) or self.db < 0:
                 raise ValueError("L2 db must be >= 0")
-            if self.backend not in ("redis", "valkey"):
+            if not isinstance(self.connect_timeout, int) or self.connect_timeout < 1:
+                raise ValueError("L2 connect_timeout must be >= 1")
+            if not isinstance(self.socket_timeout, int) or self.socket_timeout < 1:
+                raise ValueError("L2 socket_timeout must be >= 1")
+            if not isinstance(self.backend, str) or not self.backend.strip():
+                raise ValueError("L2 backend cannot be empty")
+            backend = self.backend.strip().lower()
+            if backend not in ("redis", "valkey"):
                 raise ValueError("L2 backend must be 'redis' or 'valkey'")
 
 
@@ -129,8 +146,8 @@ class CacheConfig:
     circuit_breaker: CircuitBreakerConfig = field(default_factory=CircuitBreakerConfig)
     """Configuração do circuit breaker"""
 
-    serializer: str = "pickle"
-    """Serializer a usar: 'pickle' ou 'json'"""
+    serializer: str | CacheSerializer = "pickle"
+    """Serializer a usar: nome registrado ou instancia de CacheSerializer"""
 
     logger: Optional[logging.Logger] = None
     """Logger customizado (opcional)"""
@@ -141,8 +158,18 @@ class CacheConfig:
 
     def __post_init__(self) -> None:
         """Valida a configuração."""
-        if self.serializer not in ("pickle", "json"):
-            raise ValueError("Serializer must be 'pickle' or 'json'")
+        if isinstance(self.serializer, CacheSerializer):
+            pass
+        elif isinstance(self.serializer, str):
+            available = list_serializers()
+            if self.serializer not in available:
+                raise ValueError(
+                    f"Serializer must be one of {available} or a CacheSerializer instance"
+                )
+        else:
+            raise TypeError(
+                f"Serializer must be a string or CacheSerializer, got {type(self.serializer)}"
+            )
 
         # Se logger não fornecido, cria um padrão
         if self.logger is None:
@@ -189,8 +216,8 @@ class CacheFactoryConfig:
     l1_backend: str = "ttl"
     """Backend padrão para L1: 'ttl' ou 'lru'"""
 
-    serializer: str = "pickle"
-    """Serializer padrão: 'pickle' ou 'json'"""
+    serializer: str | CacheSerializer = "pickle"
+    """Serializer padrao: nome registrado ou instancia de CacheSerializer"""
 
     circuit_breaker_enabled: bool = True
     """Habilita circuit breaker por padrão"""
@@ -210,8 +237,18 @@ class CacheFactoryConfig:
             raise ValueError("l2_backend must be 'redis' or 'valkey'")
         if self.l1_backend not in ("ttl", "lru"):
             raise ValueError("l1_backend must be 'ttl' or 'lru'")
-        if self.serializer not in ("pickle", "json"):
-            raise ValueError("serializer must be 'pickle' or 'json'")
+        if isinstance(self.serializer, CacheSerializer):
+            pass
+        elif isinstance(self.serializer, str):
+            available = list_serializers()
+            if self.serializer not in available:
+                raise ValueError(
+                    f"serializer must be one of {available} or a CacheSerializer instance"
+                )
+        else:
+            raise TypeError(
+                f"serializer must be a string or CacheSerializer, got {type(self.serializer)}"
+            )
         if self.l2_port < 1 or self.l2_port > 65535:
             raise ValueError("l2_port must be between 1 and 65535")
 

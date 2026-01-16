@@ -60,6 +60,16 @@ def test_cache_factory_config_validation_and_logger():
     assert config.logger is not None
 
 
+def test_cache_config_rejects_unknown_serializer_name():
+    with pytest.raises(ValueError):
+        CacheConfig(l1=L1Config(), l2=L2Config(), serializer="not-registered")
+
+
+def test_cache_factory_config_rejects_unknown_serializer_name():
+    with pytest.raises(ValueError):
+        CacheFactoryConfig(serializer="not-registered")
+
+
 def test_cache_factory_config_from_flask_config():
     data = {
         "CACHE_L2_BACKEND": "valkey",

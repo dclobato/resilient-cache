@@ -32,7 +32,7 @@ Exemplo de uso básico (framework-agnostic):
     cache.set("key", "value")
 """
 
-__version__ = "0.1.0"
+__version__ = "1.0.0"
 __author__ = "dclobato"
 __email__ = "daniel@lobato.org"
 
@@ -44,6 +44,14 @@ from .exceptions import (
     CacheConnectionError,
     CacheError,
     CacheSerializationError,
+)
+from .serializers import (
+    CacheSerializer,
+    JsonSerializer,
+    PickleSerializer,
+    get_serializer,
+    list_serializers,
+    register_serializer,
 )
 from .two_level_cache import ResilientTwoLevelCache
 
@@ -57,6 +65,12 @@ __all__ = [
     "CacheConnectionError",
     "CacheSerializationError",
     "CacheConfigurationError",
+    "CacheSerializer",
+    "JsonSerializer",
+    "PickleSerializer",
+    "get_serializer",
+    "list_serializers",
+    "register_serializer",
 ]
 
 try:

@@ -17,6 +17,7 @@ from .config import (
     L1Config,
     L2Config,
 )
+from .serializers import CacheSerializer, get_serializer
 from .two_level_cache import ResilientTwoLevelCache
 
 
@@ -138,13 +139,15 @@ class CacheFactory:
             self.logger.error(f"Failed to create L1 backend: {e}")
             return None
 
-    def _create_l2_backend(self, config: L2Config, serializer: str) -> Optional[CacheBackend]:
+    def _create_l2_backend(
+        self, config: L2Config, serializer: str | CacheSerializer
+    ) -> Optional[CacheBackend]:
         """
         Cria backend L2 se possível.
 
         Args:
             config: Configuração do L2
-            serializer: Tipo de serialização
+            serializer: Nome do serializer ou instância de CacheSerializer
 
         Returns:
             Backend L2 ou None se não disponível
@@ -161,7 +164,18 @@ class CacheFactory:
             if config.backend in ("redis", "valkey"):
                 from .backends.redis_backend import RedisBackend
 
-                return RedisBackend(config, serializer, self.logger)
+                # Aceita tanto string quanto instância
+                if isinstance(serializer, str):
+                    serializer_instance = get_serializer(serializer)
+                elif isinstance(serializer, CacheSerializer):
+                    serializer_instance = serializer
+                else:
+                    raise TypeError(
+                        f"serializer must be str or CacheSerializer, "
+                        f"got {type(serializer)}"
+                    )
+
+                return RedisBackend(config, serializer_instance, self.logger)
             else:
                 self.logger.error(f"Unknown L2 backend: {config.backend}")
                 return None
@@ -178,7 +192,7 @@ class CacheFactory:
         l1_enabled: bool = False,
         l1_maxsize: int = 0,
         l1_ttl: int = 0,
-        serializer: Optional[str] = None,
+        serializer: Optional[str | CacheSerializer] = None,
         circuit_breaker_enabled: Optional[bool] = None,
         circuit_breaker_threshold: Optional[int] = None,
         circuit_breaker_timeout: Optional[int] = None,
@@ -193,7 +207,7 @@ class CacheFactory:
             l1_enabled: Habilitar L1
             l1_maxsize: Tamanho máximo do L1
             l1_ttl: TTL em segundos para L1
-            serializer: Tipo de serialização ('pickle' ou 'json')
+            serializer: Nome do serializer ('pickle', 'json') ou instância de CacheSerializer
             circuit_breaker_enabled: Habilitar circuit breaker
             circuit_breaker_threshold: Falhas para abrir circuit
             circuit_breaker_timeout: Timeout antes de tentar fechar

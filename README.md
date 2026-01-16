@@ -1,6 +1,6 @@
 # Resilient Cache
 
-[![Python Version](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/downloads/)
+[![Python Version](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
 A resilient two-level cache (L1/L2) for any application, with optional Flask integration. It combines local in-memory performance with distributed sharing via Redis/Valkey.
@@ -124,6 +124,7 @@ cache_service.init_app(app)
 
 ```python
 # Create L1 + L2 cache
+cache_service = get_cache_service()
 cache = cache_service.create_cache(
     l2_key_prefix="users",
     l2_ttl=3600,           # 1 hour in L2
@@ -147,21 +148,6 @@ def get_user(user_id):
     return user
 ```
 
-### Decorator Example (Future Feature)
-
-```python
-from resilient_cache import cached
-
-@cached(
-    key_prefix="dashboard",
-    ttl=300,
-    l1_enabled=True,
-    l1_ttl=30,
-)
-def get_dashboard_data(user_id):
-    return expensive_computation(user_id)
-```
-
 ## Configuration
 
 ### Environment Keys
@@ -181,7 +167,7 @@ CACHE_CIRCUIT_BREAKER_THRESHOLD = 5
 CACHE_CIRCUIT_BREAKER_TIMEOUT = 60
 
 # Serialization
-CACHE_SERIALIZER = "pickle"  # "pickle" or "json"
+CACHE_SERIALIZER = "pickle"  # registered name (e.g. "pickle", "json")
 
 # L1 backend (default: TTLCache)
 CACHE_L1_BACKEND = "ttl"  # "ttl" or "lru"
@@ -356,7 +342,7 @@ image_cache = cache_service.create_cache(
 
 1. Keep L1 TTL shorter than L2 TTL.
 2. Size L1 using monitoring (`l1_maxsize`).
-3. Choose serializer based on data type (`json` vs `pickle`).
+3. Choose serializer based on data type (`json` vs `pickle` or custom).
 4. Use L2 for shared data across instances.
 5. Use L1 for per-process computations.
 
@@ -399,8 +385,8 @@ This project is licensed under the MIT License. See `LICENSE`.
 ## Author
 
 **Daniel Correa Lobato**
-- Website: [sites.lobato.org](https://sites.lobato.org)
 - Email: daniel@lobato.org
+- Website: [sites.lobato.org](https://sites.lobato.org)
 
 ## Acknowledgements
 

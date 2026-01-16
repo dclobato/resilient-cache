@@ -2,9 +2,7 @@
 Backend de cache L2 usando Redis/Valkey.
 """
 
-import json
 import logging
-import pickle
 from typing import Any, List, Optional
 
 from ..config import L2Config
@@ -14,6 +12,7 @@ from ..exceptions import (
     CacheSerializationError,
 )
 from .base import CacheBackend
+from ..serializers import CacheSerializer
 
 try:
     import redis
@@ -35,7 +34,7 @@ class RedisBackend(CacheBackend):
     def __init__(
         self,
         config: L2Config,
-        serializer: str = "pickle",
+        serializer: CacheSerializer,
         logger: Optional[logging.Logger] = None,
     ) -> None:
         """
@@ -43,7 +42,7 @@ class RedisBackend(CacheBackend):
 
         Args:
             config: Configuração do L2
-            serializer: Tipo de serialização ('pickle' ou 'json')
+            serializer: Instância de CacheSerializer para serialização de dados
             logger: Logger opcional
 
         Raises:
@@ -100,56 +99,6 @@ class RedisBackend(CacheBackend):
         """
         return f"{self.config.key_prefix}:{key}"
 
-    def _serialize(self, value: Any) -> bytes:
-        """
-        Serializa valor para bytes.
-
-        Args:
-            value: Valor a serializar
-
-        Returns:
-            Bytes serializados
-
-        Raises:
-            CacheSerializationError: Se falhar ao serializar
-        """
-        try:
-            if self.serializer == "json":
-                return json.dumps(value).encode("utf-8")
-            else:  # pickle
-                return pickle.dumps(value)
-        except Exception as e:
-            raise CacheSerializationError(
-                f"Failed to serialize value with {self.serializer}",
-                serializer=self.serializer,
-                original_error=e,
-            )
-
-    def _deserialize(self, data: bytes) -> Any:
-        """
-        Deserializa bytes para valor.
-
-        Args:
-            data: Bytes a deserializar
-
-        Returns:
-            Valor deserializado
-
-        Raises:
-            CacheSerializationError: Se falhar ao deserializar
-        """
-        try:
-            if self.serializer == "json":
-                return json.loads(data.decode("utf-8"))
-            else:  # pickle
-                return pickle.loads(data)
-        except Exception as e:
-            raise CacheSerializationError(
-                f"Failed to deserialize value with {self.serializer}",
-                serializer=self.serializer,
-                original_error=e,
-            )
-
     def get(self, key: str) -> Any:
         """
         Busca valor no Redis.
@@ -171,10 +120,20 @@ class RedisBackend(CacheBackend):
                 self.logger.debug(f"L2 cache miss: {key}")
                 return None
 
-            value = self._deserialize(data)
-            self.logger.debug(f"L2 cache hit: {key}")
-            return value
+            try:
+                value = self.serializer.deserialize(data)
+                self.logger.debug(f"L2 cache hit: {key}")
+                return value
+            except Exception as e:
+                raise CacheSerializationError(
+                    "Failed to deserialize cache data",
+                    key=key,
+                    serializer=type(self.serializer).__name__,
+                    original_error=e,
+                )
 
+        except CacheSerializationError:
+            raise
         except Exception as e:
             self.logger.error(f"L2 cache get error for key {key}: {e}")
             raise CacheConnectionError(
@@ -198,7 +157,15 @@ class RedisBackend(CacheBackend):
         """
         try:
             full_key = self._make_key(key)
-            data = self._serialize(value)
+            try:
+                data = self.serializer.serialize(value)
+            except Exception as e:
+                raise CacheSerializationError(
+                    "Failed to serialize cache data",
+                    key=key,
+                    serializer=type(self.serializer).__name__,
+                    original_error=e,
+                )
             ttl_seconds = ttl if ttl is not None else self.config.ttl
 
             self._client.setex(full_key, ttl_seconds, data)
@@ -396,7 +363,7 @@ class RedisBackend(CacheBackend):
                 "db": self.config.db,
                 "key_prefix": self.config.key_prefix,
                 "ttl": self.config.ttl,
-                "serializer": self.serializer,
+                "serializer": str(self.serializer),
                 "size": size,
                 "redis_stats": {
                     "total_connections_received": info.get("total_connections_received"),
