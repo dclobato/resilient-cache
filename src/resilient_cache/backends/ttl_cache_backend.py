@@ -95,6 +95,26 @@ class TTLCacheBackend(CacheBackend):
             self._cache[key] = value
         self.logger.debug(f"L1 cache set: {key}")
 
+    def set_if_not_exist(self, key: str, value: Any, ttl: Optional[int] = None) -> None:
+        """
+        Armazena valor no cache se ele ainda não existir.
+
+        Args:
+            key: Chave para armazenar
+            value: Valor a ser armazenado
+            ttl: TTL não é usado aqui (TTLCache usa TTL global)
+
+        Note:
+            TTLCache usa um TTL global definido na criação.
+            O parâmetro ttl é ignorado.
+        """
+        with self._lock:
+            if key not in self._cache:
+                self._cache[key] = value
+                self.logger.debug(f"L1 cache set: {key}")
+            else:
+                self.logger.debug(f"L1 cache set_if_not_exist skipped: {key} already exists")
+
     def delete(self, key: str) -> None:
         """
         Remove valor do cache.

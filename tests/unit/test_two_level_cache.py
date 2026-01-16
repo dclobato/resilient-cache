@@ -21,6 +21,11 @@ class FakeBackend:
         self._maybe_fail("set")
         self._data[key] = value
 
+    def set_if_not_exist(self, key, value, ttl=None):
+        self._maybe_fail("set_if_not_exist")
+        if key not in self._data:
+            self._data[key] = value
+
     def delete(self, key):
         self._maybe_fail("delete")
         self._data.pop(key, None)
@@ -108,6 +113,36 @@ def test_set_write_through_and_skip_l2_when_open():
     cache.set("k2", "v2")
     assert l1.get("k2") == "v2"
     assert l2.get("k2") is None
+
+
+def test_set_if_not_exist_l2_first_populates_l1():
+    l1 = FakeBackend()
+    l2 = FakeBackend()
+    cache = _make_cache(l1, l2)
+
+    cache.set_if_not_exist("k1", "v1")
+    assert l2.get("k1") == "v1"
+    assert l1.get("k1") == "v1"
+
+
+def test_set_if_not_exist_skips_when_l2_exists():
+    l1 = FakeBackend()
+    l2 = FakeBackend()
+    l2.set("k1", "v1")
+    cache = _make_cache(l1, l2)
+
+    cache.set_if_not_exist("k1", "v2")
+    assert l2.get("k1") == "v1"
+    assert l1.get("k1") is None
+
+
+def test_set_if_not_exist_falls_back_to_l1_when_l2_fails():
+    l1 = FakeBackend()
+    l2 = FakeBackend(fail_on={"exists"})
+    cache = _make_cache(l1, l2)
+
+    cache.set_if_not_exist("k1", "v1")
+    assert l1.get("k1") == "v1"
 
 
 def test_delete_and_clear_collect_stats():

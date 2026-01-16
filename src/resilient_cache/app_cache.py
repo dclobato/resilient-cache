@@ -64,6 +64,27 @@ class AppCache(ABC):
         pass
 
     @abstractmethod
+    def set_if_not_exist(self, key: str, value: Any) -> None:
+        """
+        Armazena um valor no cache apenas se ele não existir.
+
+        Para caches em dois níveis, usa estratégia write-through:
+        armazena em L1 e L2 simultaneamente.
+
+        Args:
+            key: Chave para armazenar
+            value: Valor a ser armazenado
+
+        Raises:
+            CacheSerializationError: Se falhar ao serializar o valor
+            CacheConnectionError: Se falhar ao conectar com L2 (mas continua com L1)
+
+        Example:
+            >>> cache.set_if_not_exist("user_123", {"name": "João", "age": 30})
+        """
+        pass
+
+    @abstractmethod
     def delete(self, key: str) -> None:
         """
         Remove um valor do cache.

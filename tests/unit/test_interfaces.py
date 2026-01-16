@@ -14,6 +14,9 @@ class DummyAppCache(AppCache):
     def set(self, key, value):
         return AppCache.set(self, key, value)
 
+    def set_if_not_exist(self, key, value):
+        return AppCache.set_if_not_exist(self, key, value)
+
     def delete(self, key):
         return AppCache.delete(self, key)
 
@@ -39,6 +42,9 @@ class DummyBackend(CacheBackend):
 
     def set(self, key, value, ttl=None):
         return CacheBackend.set(self, key, value, ttl)
+
+    def set_if_not_exist(self, key, value, ttl=None):
+        return CacheBackend.set_if_not_exist(self, key, value, ttl)
 
     def delete(self, key):
         return CacheBackend.delete(self, key)

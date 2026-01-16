@@ -32,7 +32,7 @@ Exemplo de uso básico (framework-agnostic):
     cache.set("key", "value")
 """
 
-__version__ = "1.0.0"
+__version__ = "1.1.0"
 __author__ = "dclobato"
 __email__ = "daniel@lobato.org"
 

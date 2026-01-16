@@ -183,23 +183,62 @@ class ResilientTwoLevelCache(AppCache):
                 self.logger.error(f"Unexpected L2 set error for {key}: {e}")
                 self._circuit_breaker.record_failure()
 
+    def set_if_not_exist(self, key: str, value: Any) -> None:
+        """
+        Armazena valor no cache apenas se ele não existir.
+
+        Estratégia:
+        - Tenta L2 primeiro (fonte de verdade).
+        - Se L2 aceitar, propaga para L1 (best-effort).
+        - Se L2 estiver indisponível, faz fallback para L1.
+
+        Args:
+            key: Chave para armazenar
+            value: Valor a ser armazenado
+        """
+        if self._l2_backend and not self._circuit_breaker.is_open():
+            try:
+                if self._l2_backend.exists(key):
+                    self.logger.debug(f"L2 set_if_not_exist skipped: {key} already exists")
+                    self._circuit_breaker.record_success()
+                    return
+
+                self._l2_backend.set_if_not_exist(key, value)
+                self.logger.debug(f"Stored in L2 if not exist: {key}")
+                self._circuit_breaker.record_success()
+
+                if self._l1_backend:
+                    try:
+                        self._l1_backend.set_if_not_exist(key, value)
+                        self.logger.debug(f"Stored in L1 if not exist: {key}")
+                    except Exception as e:
+                        self.logger.warning(f"L1 set_if_not_exist error for {key}: {e}")
+                return
+
+            except (CacheConnectionError, CacheSerializationError) as e:
+                self.logger.warning(f"L2 set_if_not_exist error for {key}: {e}")
+                self._circuit_breaker.record_failure()
+
+            except Exception as e:
+                self.logger.error(f"Unexpected L2 set_if_not_exist error for {key}: {e}")
+                self._circuit_breaker.record_failure()
+
+        if self._l1_backend:
+            try:
+                self._l1_backend.set_if_not_exist(key, value)
+                self.logger.debug(f"Stored in L1 if not exist: {key}")
+            except Exception as e:
+                self.logger.warning(f"L1 set_if_not_exist error for {key}: {e}")
+
     def delete(self, key: str) -> None:
         """
         Remove valor do cache.
 
-        Remove de L1 e L2 simultaneamente.
+        Remove de L2 e depois L1 (L2 como fonte de verdade).
 
         Args:
             key: Chave para remover
         """
-        # Deletar de L1
-        if self._l1_backend:
-            try:
-                self._l1_backend.delete(key)
-                self.logger.debug(f"Deleted from L1: {key}")
-            except Exception as e:
-                self.logger.warning(f"L1 delete error for {key}: {e}")
-
         # Deletar de L2 (se circuit não estiver aberto)
         if self._l2_backend and not self._circuit_breaker.is_open():
             try:
@@ -216,6 +255,14 @@ class ResilientTwoLevelCache(AppCache):
             except Exception as e:
                 self.logger.error(f"Unexpected L2 delete error for {key}: {e}")
                 self._circuit_breaker.record_failure()
+
+        # Deletar de L1
+        if self._l1_backend:
+            try:
+                self._l1_backend.delete(key)
+                self.logger.debug(f"Deleted from L1: {key}")
+            except Exception as e:
+                self.logger.warning(f"L1 delete error for {key}: {e}")
 
     def clear(self) -> dict:
         """

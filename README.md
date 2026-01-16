@@ -172,7 +172,7 @@ CACHE_SERIALIZER = "pickle"  # registered name (e.g. "pickle", "json")
 # L1 backend (default: TTLCache)
 CACHE_L1_BACKEND = "ttl"  # "ttl" or "lru"
 
-# L2 backend (default: Redis)
+# L2 backend (default: Valkey/Redis)
 CACHE_L2_BACKEND = "redis"  # "redis" or "valkey"
 ```
 

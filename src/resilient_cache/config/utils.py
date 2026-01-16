@@ -53,17 +53,16 @@ def is_valid_fqdn(endereco: str) -> bool:
 
     # Regex baseada em RFC 1123
     fqdn_pattern = re.compile(
-            r'^(?!-)'  # Não começa com hífen
-            r'(?:[a-zA-Z0-9-]{1,63}\.)*'  # Labels intermediários
-            r'[a-zA-Z0-9-]{1,63}'  # Label final
-            r'(?<!-)$'  # Não termina com hífen
-            )
+        r"^(?!-)"  # Não começa com hífen
+        r"(?:[a-zA-Z0-9-]{1,63}\.)*"  # Labels intermediários
+        r"[a-zA-Z0-9-]{1,63}"  # Label final
+        r"(?<!-)$"  # Não termina com hífen
+    )
 
     return bool(fqdn_pattern.match(endereco))
 
 
-def is_valid_port(porta: int,
-                  exclude_zero: bool = False) -> bool:
+def is_valid_port(porta: int, exclude_zero: bool = False) -> bool:
     """Valida se um número é uma porta TCP/UDP válida.
 
     Args:
@@ -87,6 +86,7 @@ def is_valid_port(porta: int,
 
 
 # Validation helpers that raise exceptions
+
 
 def validate_boolean(value: Any, field_name: str) -> None:
     """Validate that value is a boolean.

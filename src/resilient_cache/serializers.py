@@ -3,6 +3,7 @@
 Este módulo fornece diferentes estratégias de serialização para armazenar
 objetos Python no cache distribuído (Valkey/Redis).
 """
+
 import json
 import pickle
 from abc import ABC, abstractmethod
@@ -55,6 +56,7 @@ class PickleSerializer(CacheSerializer):
     **Segurança:** Pickle pode executar código arbitrário durante desserialização.
     Use apenas com dados confiáveis.
     """
+
     def __repr__(self) -> str:
         return "PickleSerializer()"
 
@@ -97,6 +99,7 @@ class JsonSerializer(CacheSerializer):
 
     **Limitações:** Não suporta dataclasses, bytes, tuplas nativas, etc.
     """
+
     def __repr__(self) -> str:
         return "JsonSerializer()"
 
@@ -113,7 +116,7 @@ class JsonSerializer(CacheSerializer):
             TypeError: Se o valor não for JSON-safe.
         """
         try:
-            return json.dumps(value, ensure_ascii=False).encode('utf-8')
+            return json.dumps(value, ensure_ascii=False).encode("utf-8")
         except Exception as e:
             raise ValueError(f"Erro ao serializar com JSON: {e}") from e
 
@@ -127,15 +130,15 @@ class JsonSerializer(CacheSerializer):
             Any: Objeto Python (dict, list, str, int, float, bool, None).
         """
         try:
-            return json.loads(data.decode('utf-8'))
+            return json.loads(data.decode("utf-8"))
         except (json.JSONDecodeError, UnicodeDecodeError) as e:
             raise ValueError(f"Erro ao desserializar com JSON: {e}") from e
 
 
 # Registro global de serializers disponíveis
 _SERIALIZER_REGISTRY: dict[str, type[CacheSerializer]] = {
-    'pickle': PickleSerializer,
-    'json': JsonSerializer,
+    "pickle": PickleSerializer,
+    "json": JsonSerializer,
 }
 
 
@@ -159,8 +162,7 @@ def register_serializer(name: str, serializer_class: type[CacheSerializer]) -> N
     """
     if not issubclass(serializer_class, CacheSerializer):
         raise TypeError(
-            f"serializer_class must be a subclass of CacheSerializer, "
-            f"got {serializer_class}"
+            f"serializer_class must be a subclass of CacheSerializer, " f"got {serializer_class}"
         )
     _SERIALIZER_REGISTRY[name] = serializer_class
 
@@ -183,11 +185,8 @@ def get_serializer(name: str) -> CacheSerializer:
         >>> serializer = get_serializer('pickle')
     """
     if name not in _SERIALIZER_REGISTRY:
-        available = ', '.join(_SERIALIZER_REGISTRY.keys())
-        raise ValueError(
-            f"Unknown serializer '{name}'. "
-            f"Available serializers: {available}"
-        )
+        available = ", ".join(list_serializers())
+        raise ValueError(f"Unknown serializer '{name}'. " f"Available serializers: {available}")
 
     serializer_class = _SERIALIZER_REGISTRY[name]
     return serializer_class()

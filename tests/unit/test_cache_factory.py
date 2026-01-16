@@ -8,7 +8,7 @@ def test_cache_factory_dependency_checks(monkeypatch):
     original_import = builtins.__import__
 
     def fake_import(name, *args, **kwargs):
-        if name in ("cachetools", "redis"):
+        if name in ("cachetools", "valkey"):
             raise ImportError("missing")
         return original_import(name, *args, **kwargs)
 

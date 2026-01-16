@@ -1,20 +1,25 @@
-.PHONY: help install install-dev test test-cov format lint type-check clean build upload docs dev check
+.PHONY: help install install-dev test test-unit test-integration test-all test-cov test-cov-integration test-cov-all format lint type-check clean build upload docs dev check
 
 help:
 	@echo "Resilient Cache - Makefile (Windows)"
 	@echo ""
 	@echo "Comandos disponíveis:"
-	@echo "  make -f Makefile.windows install      - Sincroniza dependências"
-	@echo "  make -f Makefile.windows install-dev  - Sincroniza dependências de desenvolvimento"
-	@echo "  make -f Makefile.windows test         - Executa testes"
-	@echo "  make -f Makefile.windows test-cov     - Executa testes com coverage"
-	@echo "  make -f Makefile.windows format       - Formata código com black e isort"
-	@echo "  make -f Makefile.windows lint         - Verifica código com flake8"
-	@echo "  make -f Makefile.windows type-check   - Verifica tipos com mypy"
-	@echo "  make -f Makefile.windows clean        - Limpa arquivos temporários"
-	@echo "  make -f Makefile.windows build        - Cria distribuição do pacote"
-	@echo "  make -f Makefile.windows upload       - Faz upload para PyPI (requer credenciais)"
-	@echo "  make -f Makefile.windows docs         - Gera documentação"
+	@echo "  make -f Makefile.windows install              - Sincroniza dependências"
+	@echo "  make -f Makefile.windows install-dev          - Sincroniza dependências de desenvolvimento"
+	@echo "  make -f Makefile.windows test                 - Executa testes unitários (alias para test-unit)"
+	@echo "  make -f Makefile.windows test-unit            - Executa apenas testes unitários"
+	@echo "  make -f Makefile.windows test-integration     - Executa apenas testes de integração"
+	@echo "  make -f Makefile.windows test-all             - Executa todos os testes (unitários + integração)"
+	@echo "  make -f Makefile.windows test-cov             - Executa testes unitários com coverage"
+	@echo "  make -f Makefile.windows test-cov-integration - Executa testes de integração com coverage"
+	@echo "  make -f Makefile.windows test-cov-all         - Executa todos os testes com coverage"
+	@echo "  make -f Makefile.windows format               - Formata código com black e isort"
+	@echo "  make -f Makefile.windows lint                 - Verifica código com flake8"
+	@echo "  make -f Makefile.windows type-check           - Verifica tipos com mypy"
+	@echo "  make -f Makefile.windows clean                - Limpa arquivos temporários"
+	@echo "  make -f Makefile.windows build                - Cria distribuição do pacote"
+	@echo "  make -f Makefile.windows upload               - Faz upload para PyPI (requer credenciais)"
+	@echo "  make -f Makefile.windows docs                 - Gera documentação"
 
 install:
 	uv sync
@@ -22,11 +27,25 @@ install:
 install-dev:
 	uv sync --extra dev
 
-test:
-	uv run pytest -v
+test-unit:
+	uv run pytest tests/unit/ -v
+
+test-integration:
+	powershell -NoProfile -Command "$$env:VALKEY_HOST='10.0.1.17'; $$env:VALKEY_PORT='6379'; $$env:VALKEY_DB='0'; uv run pytest tests/integration/ -v"
+
+test-all:
+	powershell -NoProfile -Command "$$env:VALKEY_HOST='10.0.1.17'; $$env:VALKEY_PORT='6379'; $$env:VALKEY_DB='0'; uv run pytest tests/ -v"
+
+test: test-unit
 
 test-cov:
-	uv run pytest -v --cov=resilient_cache --cov-report=term-missing --cov-report=html
+	uv run pytest tests/unit/ -v --cov=resilient_cache --cov-report=term-missing --cov-report=html
+
+test-cov-integration:
+	powershell -NoProfile -Command "$$env:VALKEY_HOST='10.0.1.17'; $$env:VALKEY_PORT='6379'; $$env:VALKEY_DB='0'; uv run pytest tests/integration/ -v --cov=resilient_cache --cov-report=term-missing --cov-report=html"
+
+test-cov-all:
+	powershell -NoProfile -Command "$$env:VALKEY_HOST='10.0.1.17'; $$env:VALKEY_PORT='6379'; $$env:VALKEY_DB='0'; uv run pytest tests/ -v --cov=resilient_cache --cov-report=term-missing --cov-report=html"
 
 format:
 	uv run black src/ tests/ examples/
@@ -56,5 +75,5 @@ docs:
 # Atalhos úteis
 dev: install-dev
 
-check: format lint type-check test-cov
+check: format lint type-check test-cov-all
 	@echo "✅ Todas as verificações passaram!"

@@ -1,4 +1,5 @@
 """Testes para o módulo de serializers e registro de serializers."""
+
 import pickle
 from typing import Any
 
@@ -141,7 +142,7 @@ class TestSerializerRegistry:
         s1 = get_serializer("json")
         s2 = get_serializer("json")
         assert s1 is not s2
-        assert type(s1) == type(s2)
+        assert type(s1) is type(s2)
 
     def test_get_serializer_unknown_raises_error(self):
         with pytest.raises(ValueError, match="Unknown serializer 'invalid'"):

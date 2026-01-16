@@ -87,16 +87,16 @@ class CacheFactory:
                 'Install with: uv add "resilient-cache[l1]"'
             )
 
-        # Verificar redis (L2)
+        # Verificar valkey (L2)
         try:
-            import redis  # noqa: F401
+            import valkey  # noqa: F401
 
             self._redis_available = True
-            self.logger.debug("redis available for L2 cache")
+            self.logger.debug("valkey available for L2 cache")
         except ImportError:
             self._redis_available = False
             self.logger.warning(
-                "redis not available - L2 cache will be disabled. "
+                "valkey not available - L2 cache will be disabled. "
                 'Install with: uv add "resilient-cache[l2]"'
             )
 
@@ -171,8 +171,7 @@ class CacheFactory:
                     serializer_instance = serializer
                 else:
                     raise TypeError(
-                        f"serializer must be str or CacheSerializer, "
-                        f"got {type(serializer)}"
+                        f"serializer must be str or CacheSerializer, " f"got {type(serializer)}"
                     )
 
                 return RedisBackend(config, serializer_instance, self.logger)

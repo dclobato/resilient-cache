@@ -88,7 +88,13 @@ class FakeRedisClient:
     def get(self, key: str) -> Optional[bytes]:
         return self._data.get(key)
 
-    def setex(self, key: str, ttl: int, value: bytes) -> None:
+    def setex(
+        self, key: str, ttl: Optional[int] = None, value: Optional[bytes] = None, **kwargs
+    ) -> None:
+        if ttl is None and "time" in kwargs:
+            ttl = kwargs["time"]
+        if value is None and "value" in kwargs:
+            value = kwargs["value"]
         self._data[key] = value
 
     def delete(self, *keys: str) -> int:
@@ -105,6 +111,10 @@ class FakeRedisClient:
             prefix = pattern[:-1]
             return [k.encode("utf-8") for k in self._data if k.startswith(prefix)]
         return []
+
+    def scan(self, cursor: int = 0, match: Optional[str] = None, count: int = 10):
+        keys = self.keys(match or "*")
+        return 0, keys
 
     def exists(self, key: str) -> int:
         return 1 if key in self._data else 0
@@ -130,9 +140,9 @@ class FakeRedisFailClient(FakeRedisClient):
 
 
 def _setup_fake_redis(monkeypatch, client_cls):
-    fake_module = types.SimpleNamespace(Redis=client_cls)
-    monkeypatch.setattr(redis_module, "redis", fake_module)
-    monkeypatch.setattr(redis_module, "REDIS_AVAILABLE", True)
+    fake_module = types.SimpleNamespace(Valkey=client_cls)
+    monkeypatch.setattr(redis_module, "valkey", fake_module)
+    monkeypatch.setattr(redis_module, "VALKEY_AVAILABLE", True)
 
 
 def test_redis_backend_connection_error(monkeypatch):
@@ -194,8 +204,8 @@ def test_redis_backend_serialization_error(monkeypatch, serializer, bad_value):
 
 
 def test_redis_backend_missing_dependency(monkeypatch):
-    monkeypatch.setattr(redis_module, "REDIS_AVAILABLE", False)
-    monkeypatch.setattr(redis_module, "redis", None)
+    monkeypatch.setattr(redis_module, "VALKEY_AVAILABLE", False)
+    monkeypatch.setattr(redis_module, "valkey", None)
     config = L2Config(enabled=True, host="localhost", port=6379, db=0, key_prefix="p")
 
     with pytest.raises(CacheConfigurationError):
@@ -224,7 +234,7 @@ def test_redis_backend_operations_raise_connection_error(monkeypatch):
         def get(self, key):
             raise RuntimeError("boom")
 
-        def setex(self, key, ttl, value):
+        def setex(self, key, ttl=None, value=None, **kwargs):
             raise RuntimeError("boom")
 
         def delete(self, *keys):
@@ -280,6 +290,7 @@ def test_redis_backend_operations_raise_connection_error(monkeypatch):
         raise RuntimeError("boom")
 
     backend._client.ping = _boom  # type: ignore[assignment]
+    backend._is_connected = lambda: True  # type: ignore[assignment]
     with pytest.raises(CacheConnectionError):
         backend.ping()
 

@@ -128,8 +128,8 @@ uv run python test_local.py
 ### Example 2: Full Flask App
 
 ```bash
-# Ensure Redis is running
-docker run -d -p 6379:6379 redis:7-alpine
+# Ensure Valkey is running
+docker run -d -p 6379:6379 valkey/valkey:latest
 
 # Run the example
 uv run python examples/basic_usage.py
@@ -149,7 +149,7 @@ curl http://localhost:5000/health
 Edit `src/resilient_cache/__init__.py` and `pyproject.toml`:
 
 ```python
-__version__ = "0.1.1"
+__version__ = "1.1.0"
 ```
 
 ### 2) Update CHANGELOG
@@ -160,8 +160,8 @@ Document changes in `CHANGELOG.md`.
 
 ```bash
 git add .
-git commit -m "Release v0.1.1"
-git tag v0.1.1
+git commit -m "Release v1.1.0"
+git tag v1.1.0
 git push origin main --tags
 ```
 

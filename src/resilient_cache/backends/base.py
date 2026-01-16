@@ -39,6 +39,18 @@ class CacheBackend(ABC):
         pass
 
     @abstractmethod
+    def set_if_not_exist(self, key: str, value: Any, ttl: Optional[int] = None) -> None:
+        """
+        Armazena um valor no backend apenas se ele não existir.
+
+        Args:
+            key: Chave para armazenar
+            value: Valor a ser armazenado
+            ttl: Time-to-live em segundos (opcional)
+        """
+        pass
+
+    @abstractmethod
     def delete(self, key: str) -> None:
         """
         Remove um valor do backend.
