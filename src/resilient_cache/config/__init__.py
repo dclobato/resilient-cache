@@ -8,7 +8,15 @@ import logging
 from dataclasses import dataclass, field
 from typing import Any, Callable, Optional
 
-from resilient_cache.config.utils import is_valid_fqdn, is_valid_ip, is_valid_port
+from resilient_cache.config.utils import (
+    validate_boolean,
+    validate_host,
+    validate_int_min,
+    validate_optional_string,
+    validate_port_number,
+    validate_string_in_choices,
+    validate_string_not_empty,
+)
 from resilient_cache.serializers import CacheSerializer, list_serializers
 
 
@@ -32,10 +40,9 @@ class CircuitBreakerConfig:
 
     def __post_init__(self) -> None:
         """Valida a configuração."""
-        if self.threshold < 1:
-            raise ValueError("Circuit breaker threshold must be >= 1")
-        if self.timeout < 1:
-            raise ValueError("Circuit breaker timeout must be >= 1")
+        validate_boolean(self.enabled, "Circuit breaker enabled")
+        validate_int_min(self.threshold, "Circuit breaker threshold", 1)
+        validate_int_min(self.timeout, "Circuit breaker timeout", 1)
 
 
 @dataclass
@@ -56,13 +63,12 @@ class L1Config:
 
     def __post_init__(self) -> None:
         """Valida a configuração."""
+        validate_boolean(self.enabled, "L1 enabled")
         if self.enabled:
-            if self.maxsize < 1:
-                raise ValueError("L1 maxsize must be >= 1")
-            if self.ttl < 1:
-                raise ValueError("L1 TTL must be >= 1")
-            if self.backend not in ("ttl", "lru"):
-                raise ValueError("L1 backend must be 'ttl' or 'lru'")
+            validate_int_min(self.maxsize, "L1 maxsize", 1)
+            validate_int_min(self.ttl, "L1 TTL", 1)
+            self.backend = validate_string_not_empty(self.backend, "L1 backend").lower()
+            validate_string_in_choices(self.backend, "L1 backend", ("ttl", "lru"))
 
 
 @dataclass
@@ -101,31 +107,18 @@ class L2Config:
 
     def __post_init__(self) -> None:
         """Valida a configuração."""
-        if not isinstance(self.enabled, bool):
-            raise ValueError("L2 enabled must be a boolean")
+        validate_boolean(self.enabled, "L2 enabled")
         if self.enabled:
-            if not isinstance(self.ttl, int) or self.ttl < 1:
-                raise ValueError("L2 TTL must be >= 1")
-            if not isinstance(self.key_prefix, str) or not self.key_prefix.strip():
-                raise ValueError("L2 key_prefix cannot be empty")
-            if not isinstance(self.host, str) or not self.host.strip():
-                raise ValueError("VALKEY_BACKEND_HOST deve ser uma string valida")
-            host = self.host.strip()
-            if not (is_valid_ip(host) or is_valid_fqdn(host)):
-                raise ValueError("L2 host must be a valid IP address or FQDN")
-            if not isinstance(self.port, int) or not is_valid_port(self.port, exclude_zero=True):
-                raise ValueError("L2 port must be between 1 and 65535")
-            if not isinstance(self.db, int) or self.db < 0:
-                raise ValueError("L2 db must be >= 0")
-            if not isinstance(self.connect_timeout, int) or self.connect_timeout < 1:
-                raise ValueError("L2 connect_timeout must be >= 1")
-            if not isinstance(self.socket_timeout, int) or self.socket_timeout < 1:
-                raise ValueError("L2 socket_timeout must be >= 1")
-            if not isinstance(self.backend, str) or not self.backend.strip():
-                raise ValueError("L2 backend cannot be empty")
-            backend = self.backend.strip().lower()
-            if backend not in ("redis", "valkey"):
-                raise ValueError("L2 backend must be 'redis' or 'valkey'")
+            validate_int_min(self.ttl, "L2 TTL", 1)
+            validate_string_not_empty(self.key_prefix, "L2 key_prefix")
+            self.host = validate_host(self.host, "L2 host")
+            validate_port_number(self.port, "L2 port", exclude_zero=True)
+            validate_int_min(self.db, "L2 db", 0)
+            validate_optional_string(self.password, "L2 password")
+            validate_int_min(self.connect_timeout, "L2 connect_timeout", 1)
+            validate_int_min(self.socket_timeout, "L2 socket_timeout", 1)
+            self.backend = validate_string_not_empty(self.backend, "L2 backend").lower()
+            validate_string_in_choices(self.backend, "L2 backend", ("redis", "valkey"))
 
 
 @dataclass
@@ -171,8 +164,8 @@ class CacheConfig:
                 f"Serializer must be a string or CacheSerializer, got {type(self.serializer)}"
             )
 
-        # Se logger não fornecido, cria um padrão
-        if self.logger is None:
+        # Se logger não for da classe logging.Logger ou não fornecido, cria um padrão
+        if not isinstance(self.logger, logging.Logger) or self.logger is None:
             self.logger = logging.getLogger("resilient_cache")
             if not self.logger.handlers:
                 handler = logging.StreamHandler()
@@ -233,10 +226,24 @@ class CacheFactoryConfig:
 
     def __post_init__(self) -> None:
         """Valida a configuração."""
-        if self.l2_backend not in ("redis", "valkey"):
-            raise ValueError("l2_backend must be 'redis' or 'valkey'")
-        if self.l1_backend not in ("ttl", "lru"):
-            raise ValueError("l1_backend must be 'ttl' or 'lru'")
+        # Validate and normalize backends
+        self.l2_backend = validate_string_not_empty(self.l2_backend, "l2_backend").lower()
+        validate_string_in_choices(self.l2_backend, "l2_backend", ("redis", "valkey"))
+
+        self.l1_backend = validate_string_not_empty(self.l1_backend, "l1_backend").lower()
+        validate_string_in_choices(self.l1_backend, "l1_backend", ("ttl", "lru"))
+
+        # Validate host and port
+        self.l2_host = validate_host(self.l2_host, "l2_host")
+        validate_port_number(self.l2_port, "l2_port", exclude_zero=True)
+
+        # Validate other L2 settings
+        validate_int_min(self.l2_db, "l2_db", 0)
+        validate_optional_string(self.l2_password, "l2_password")
+        validate_int_min(self.l2_connect_timeout, "l2_connect_timeout", 0)
+        validate_int_min(self.l2_socket_timeout, "l2_socket_timeout", 0)
+
+        # Validate serializer
         if isinstance(self.serializer, CacheSerializer):
             pass
         elif isinstance(self.serializer, str):
@@ -249,11 +256,14 @@ class CacheFactoryConfig:
             raise TypeError(
                 f"serializer must be a string or CacheSerializer, got {type(self.serializer)}"
             )
-        if self.l2_port < 1 or self.l2_port > 65535:
-            raise ValueError("l2_port must be between 1 and 65535")
 
-        # Se logger não fornecido, cria um padrão
-        if self.logger is None:
+        # Validate circuit breaker settings
+        validate_boolean(self.circuit_breaker_enabled, "circuit_breaker_enabled")
+        validate_int_min(self.circuit_breaker_threshold, "circuit_breaker_threshold", 1)
+        validate_int_min(self.circuit_breaker_timeout, "circuit_breaker_timeout", 1)
+
+        # Se logger não for instância de logging.Logger ou não fornecido, cria um padrão
+        if self.logger is None or not isinstance(self.logger, logging.Logger):
             self.logger = logging.getLogger("resilient_cache.factory")
             if not self.logger.handlers:
                 handler = logging.StreamHandler()
@@ -285,7 +295,7 @@ class CacheFactoryConfig:
             l2_host=config.get("CACHE_REDIS_HOST", "localhost"),
             l2_port=config.get("CACHE_REDIS_PORT", 6379),
             l2_db=config.get("CACHE_REDIS_DB", 0),
-            l2_password=config.get("CACHE_REDIS_PASSWORD"),
+            l2_password=config.get("CACHE_REDIS_PASSWORD", None),
             l2_connect_timeout=config.get("CACHE_REDIS_CONNECT_TIMEOUT", 5),
             l2_socket_timeout=config.get("CACHE_REDIS_SOCKET_TIMEOUT", 5),
             l1_backend=config.get("CACHE_L1_BACKEND", "ttl"),

@@ -202,6 +202,6 @@ def list_serializers() -> list[str]:
 
     Example:
         >>> list_serializers()
-        ['pickle', 'json']
+        ['json', 'pickle']
     """
-    return list(_SERIALIZER_REGISTRY.keys())
+    return list(sorted(_SERIALIZER_REGISTRY.keys()))
